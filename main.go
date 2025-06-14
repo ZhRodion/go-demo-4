@@ -1,17 +1,90 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"math/rand/v2"
+	"net/url"
+	"time"
+)
 
-func main() {
-	a := [4]int{1, 2, 3, 4}
-	reverse(&a)
-	fmt.Println(a)
+type account struct {
+	login    string
+	password string
+	url      string
 }
 
-func reverse(arr *[4]int) *[4]int {
-	for i := range len(arr) / 2 {
-		arr[i], arr[len(arr)-i-1] = arr[len(arr)-i-1], arr[i]
+type accountWithTimesStamp struct {
+	account   account
+	createdAt time.Time
+	updatedAt time.Time
+}
+
+func (account *account) outputPassword() {
+	fmt.Println(account.login, account.password, account.url)
+}
+
+func (account *account) generatePassword(length int) {
+	result := make([]rune, length)
+	for i := range length {
+		result[i] = lettersRunes[rand.IntN(len(lettersRunes))]
 	}
 
-	return arr
+	account.password = string(result)
+}
+
+func newAccountWithTimesStamp(login, password, urlString string) (*accountWithTimesStamp, error) {
+
+	if login == "" {
+		return nil, errors.New("login is required")
+	}
+
+	_, err := url.ParseRequestURI(urlString)
+
+	if err != nil {
+		return nil, errors.New("invalid url")
+	}
+
+	newAccount := &account{
+		login:    login,
+		password: password,
+		url:      urlString,
+	}
+
+	if password == "" {
+		newAccount.generatePassword(12)
+	}
+
+	return &accountWithTimesStamp{
+		account:   *newAccount,
+		createdAt: time.Now(),
+		updatedAt: time.Now(),
+	}, nil
+}
+
+var lettersRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func main() {
+
+	login := promtData("Login: ")
+	password := promtData("Password: ")
+	url := promtData("URL: ")
+
+	myAccount, err := newAccountWithTimesStamp(login, password, url)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	myAccount.account.generatePassword(12)
+	myAccount.account.outputPassword()
+
+}
+
+func promtData(promt string) string {
+	fmt.Print(promt)
+	var res string
+	fmt.Scanln(&res)
+	return res
 }
