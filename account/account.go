@@ -14,6 +14,36 @@ import (
 
 var lettersRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
+// AccountInterface описывает поведение аккаунта
+type AccountInterface interface {
+	OutputPassword()
+	GeneratePassword(int)
+	ToBytes() ([]byte, error)
+	GetLogin() string
+	GetPassword() string
+	GetURL() string
+}
+
+// PasswordGenerator интерфейс для генерации паролей
+type PasswordGenerator interface {
+	Generate(length int) string
+}
+
+// DefaultPasswordGenerator стандартная реализация генератора паролей
+type DefaultPasswordGenerator struct{}
+
+func NewDefaultPasswordGenerator() *DefaultPasswordGenerator {
+	return &DefaultPasswordGenerator{}
+}
+
+func (dpg *DefaultPasswordGenerator) Generate(length int) string {
+	result := make([]rune, length)
+	for i := range length {
+		result[i] = lettersRunes[rand.IntN(len(lettersRunes))]
+	}
+	return string(result)
+}
+
 type Account struct {
 	Login     string    `json:"login"`
 	Password  string    `json:"password"`
@@ -28,13 +58,21 @@ func (account *Account) OutputPassword() {
 	color.Blue(account.URL)
 }
 
-func (account *Account) GeneratePassword(length int) {
-	result := make([]rune, length)
-	for i := range length {
-		result[i] = lettersRunes[rand.IntN(len(lettersRunes))]
-	}
+func (account *Account) GetLogin() string {
+	return account.Login
+}
 
-	account.Password = string(result)
+func (account *Account) GetPassword() string {
+	return account.Password
+}
+
+func (account *Account) GetURL() string {
+	return account.URL
+}
+
+func (account *Account) GeneratePassword(length int) {
+	generator := NewDefaultPasswordGenerator()
+	account.Password = generator.Generate(length)
 }
 
 func NewAccount(login, password, urlString string) (*Account, error) {

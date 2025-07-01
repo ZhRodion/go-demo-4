@@ -14,6 +14,13 @@ type Db interface {
 	Write([]byte, string)
 }
 
+// VaultInterface интерфейс для работы с хранилищем аккаунтов
+type VaultInterface interface {
+	AddAccount(*Account)
+	ToBytes() ([]byte, error)
+	GetAccounts() []Account
+}
+
 type Vault struct {
 	Accounts  []Account `json:"accounts"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -65,6 +72,10 @@ func (vault *Vault) ToBytes() ([]byte, error) {
 	}
 
 	return file, nil
+}
+
+func (vault *Vault) GetAccounts() []Account {
+	return vault.Accounts
 }
 
 // SaveBin сохраняет бинарные данные в JSON формате с base64 кодированием
