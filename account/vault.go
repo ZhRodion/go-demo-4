@@ -1,7 +1,6 @@
 package account
 
 import (
-	"demo/password/files"
 	"encoding/base64"
 	"encoding/json"
 	"time"
@@ -51,17 +50,19 @@ func NewVault(db Db) *VaultWithDb {
 		color.Red(err.Error())
 	}
 
+	vault.db = db
 	return &vault
 }
 
-func (vault *Vault) AddAccount(account *Account) {
+func (vault *VaultWithDb) AddAccount(account *Account) {
 	vault.Accounts = append(vault.Accounts, *account)
 	vault.UpdatedAt = time.Now()
 	data, err := vault.ToBytes()
 	if err != nil {
 		color.Red("Error writing file", err.Error())
+		return
 	}
-	files.NewJsonDB("vault.json").Write(data, "vault.json")
+	vault.db.Write(data, "vault.json")
 }
 
 func (vault *Vault) ToBytes() ([]byte, error) {
@@ -79,7 +80,7 @@ func (vault *Vault) GetAccounts() []Account {
 }
 
 // SaveBin сохраняет бинарные данные в JSON формате с base64 кодированием
-func SaveBin(data []byte, filename string) error {
+func SaveBin(data []byte, filename string, db Db) error {
 	// Структура для JSON с бинарными данными
 	binaryData := struct {
 		Data      string    `json:"data"` // base64 encoded data
@@ -98,13 +99,13 @@ func SaveBin(data []byte, filename string) error {
 	}
 
 	// Сохраняем в файл
-	files.NewJsonDB(filename).Write(jsonData, filename)
+	db.Write(jsonData, filename)
 	return nil
 }
 
 // LoadBin загружает бинарные данные из JSON файла
-func LoadBin(filename string) ([]byte, error) {
-	file, err := files.NewJsonDB(filename).Read(filename)
+func LoadBin(filename string, db Db) ([]byte, error) {
+	file, err := db.Read(filename)
 	if err != nil {
 		return nil, err
 	}

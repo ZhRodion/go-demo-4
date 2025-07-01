@@ -34,16 +34,19 @@ func (c *ConsoleInputProvider) PromptInt(prompt string) int {
 }
 
 func main() {
+	// Создаем единую зависимость для работы с базой данных
+	db := files.NewJsonDB("vault.json")
+
 Menu:
 	for {
 		if variant := menuSelector(); variant != 0 {
 			switch variant {
 			case 1:
-				createAccount()
+				createAccount(db)
 			case 2:
-				searchAccount()
+				searchAccount(db)
 			case 3:
-				deleteAccount()
+				deleteAccount(db)
 			default:
 				break Menu
 			}
@@ -51,7 +54,7 @@ Menu:
 	}
 }
 
-func createAccount() {
+func createAccount(db account.Db) {
 	inputProvider := NewConsoleInputProvider()
 	login := inputProvider.PromptData("Login: ")
 	password := inputProvider.PromptData("Password: ")
@@ -64,16 +67,8 @@ func createAccount() {
 		return
 	}
 
-	vault := account.NewVault(files.NewJsonDB("vault.json"))
+	vault := account.NewVault(db)
 	vault.AddAccount(myAccount)
-	data, err := vault.ToBytes()
-
-	if err != nil {
-		fmt.Println("Error marshalling account", err)
-		return
-	}
-
-	files.NewJsonDB("vault.json").Write(data, "vault.json")
 }
 
 func menuSelector() int {
@@ -87,8 +82,8 @@ func menuSelector() int {
 	return inputProvider.PromptInt("")
 }
 
-func searchAccount() {
-	foundAccount, err := account.FindAccount()
+func searchAccount(db account.Db) {
+	foundAccount, err := account.FindAccount(db)
 
 	if err != nil {
 		fmt.Println("Ошибка:", err)
@@ -99,8 +94,8 @@ func searchAccount() {
 	foundAccount.OutputPassword()
 }
 
-func deleteAccount() {
-	err := account.DeleteAccount()
+func deleteAccount(db account.Db) {
+	err := account.DeleteAccount(db)
 
 	if err != nil {
 		fmt.Println("Ошибка при удалении аккаунта:", err)

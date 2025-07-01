@@ -1,7 +1,6 @@
 package account
 
 import (
-	"demo/password/files"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -136,7 +135,7 @@ func (account *Account) SearchAccount() (*Account, error) {
 	return nil, errors.New("account not found")
 }
 
-func FindAccount() (*Account, error) {
+func FindAccount(db Db) (*Account, error) {
 	fmt.Println("Enter login: ")
 	var inputLogin string
 	fmt.Scanln(&inputLogin)
@@ -145,7 +144,7 @@ func FindAccount() (*Account, error) {
 		return nil, errors.New("login is required")
 	}
 
-	file, err := files.NewJsonDB("vault.json").Read("vault.json")
+	file, err := db.Read("vault.json")
 
 	if err != nil {
 		color.Red("Error reading file", err.Error())
@@ -169,7 +168,7 @@ func FindAccount() (*Account, error) {
 	return nil, errors.New("account not found")
 }
 
-func DeleteAccount() error {
+func DeleteAccount(db Db) error {
 	fmt.Println("Enter login to delete: ")
 	var inputLogin string
 	fmt.Scanln(&inputLogin)
@@ -179,7 +178,7 @@ func DeleteAccount() error {
 	}
 
 	// Читаем текущий vault
-	file, err := files.NewJsonDB("vault.json").Read("vault.json")
+	file, err := db.Read("vault.json")
 	if err != nil {
 		color.Red("Error reading file", err.Error())
 		return err
@@ -214,6 +213,6 @@ func DeleteAccount() error {
 		return err
 	}
 
-	files.NewJsonDB("vault.json").Write(data, "vault.json")
+	db.Write(data, "vault.json")
 	return nil
 }

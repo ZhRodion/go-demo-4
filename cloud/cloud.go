@@ -14,6 +14,6 @@ func (db *CloudDb) Read(filename string) ([]byte, error) {
 	return nil, nil
 }
 
-func (db *CloudDb) Write(content, filename string) {
-
+func (db *CloudDb) Write(content []byte, filename string) {
+	// TODO: Реализовать отправку данных в облако
 }
