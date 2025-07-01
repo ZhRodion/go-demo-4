@@ -1,7 +1,6 @@
 package account
 
 import (
-	"demo/password/files"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +12,36 @@ import (
 )
 
 var lettersRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+// AccountInterface описывает поведение аккаунта
+type AccountInterface interface {
+	OutputPassword()
+	GeneratePassword(int)
+	ToBytes() ([]byte, error)
+	GetLogin() string
+	GetPassword() string
+	GetURL() string
+}
+
+// PasswordGenerator интерфейс для генерации паролей
+type PasswordGenerator interface {
+	Generate(length int) string
+}
+
+// DefaultPasswordGenerator стандартная реализация генератора паролей
+type DefaultPasswordGenerator struct{}
+
+func NewDefaultPasswordGenerator() *DefaultPasswordGenerator {
+	return &DefaultPasswordGenerator{}
+}
+
+func (dpg *DefaultPasswordGenerator) Generate(length int) string {
+	result := make([]rune, length)
+	for i := range length {
+		result[i] = lettersRunes[rand.IntN(len(lettersRunes))]
+	}
+	return string(result)
+}
 
 type Account struct {
 	Login     string    `json:"login"`
@@ -28,13 +57,21 @@ func (account *Account) OutputPassword() {
 	color.Blue(account.URL)
 }
 
-func (account *Account) GeneratePassword(length int) {
-	result := make([]rune, length)
-	for i := range length {
-		result[i] = lettersRunes[rand.IntN(len(lettersRunes))]
-	}
+func (account *Account) GetLogin() string {
+	return account.Login
+}
 
-	account.Password = string(result)
+func (account *Account) GetPassword() string {
+	return account.Password
+}
+
+func (account *Account) GetURL() string {
+	return account.URL
+}
+
+func (account *Account) GeneratePassword(length int) {
+	generator := NewDefaultPasswordGenerator()
+	account.Password = generator.Generate(length)
 }
 
 func NewAccount(login, password, urlString string) (*Account, error) {
@@ -98,7 +135,7 @@ func (account *Account) SearchAccount() (*Account, error) {
 	return nil, errors.New("account not found")
 }
 
-func FindAccount() (*Account, error) {
+func FindAccount(db Db) (*Account, error) {
 	fmt.Println("Enter login: ")
 	var inputLogin string
 	fmt.Scanln(&inputLogin)
@@ -107,7 +144,7 @@ func FindAccount() (*Account, error) {
 		return nil, errors.New("login is required")
 	}
 
-	file, err := files.NewJsonDB("vault.json").Read("vault.json")
+	file, err := db.Read("vault.json")
 
 	if err != nil {
 		color.Red("Error reading file", err.Error())
@@ -131,7 +168,7 @@ func FindAccount() (*Account, error) {
 	return nil, errors.New("account not found")
 }
 
-func DeleteAccount() error {
+func DeleteAccount(db Db) error {
 	fmt.Println("Enter login to delete: ")
 	var inputLogin string
 	fmt.Scanln(&inputLogin)
@@ -141,7 +178,7 @@ func DeleteAccount() error {
 	}
 
 	// Читаем текущий vault
-	file, err := files.NewJsonDB("vault.json").Read("vault.json")
+	file, err := db.Read("vault.json")
 	if err != nil {
 		color.Red("Error reading file", err.Error())
 		return err
@@ -176,6 +213,6 @@ func DeleteAccount() error {
 		return err
 	}
 
-	files.NewJsonDB("vault.json").Write(data, "vault.json")
+	db.Write(data, "vault.json")
 	return nil
 }

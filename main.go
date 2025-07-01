@@ -6,17 +6,47 @@ import (
 	"fmt"
 )
 
+// InputProvider интерфейс для получения пользовательского ввода
+type InputProvider interface {
+	PromptData(prompt string) string
+	PromptInt(prompt string) int
+}
+
+// ConsoleInputProvider реализация для консольного ввода
+type ConsoleInputProvider struct{}
+
+func NewConsoleInputProvider() *ConsoleInputProvider {
+	return &ConsoleInputProvider{}
+}
+
+func (c *ConsoleInputProvider) PromptData(prompt string) string {
+	fmt.Print(prompt)
+	var res string
+	fmt.Scanln(&res)
+	return res
+}
+
+func (c *ConsoleInputProvider) PromptInt(prompt string) int {
+	fmt.Print(prompt)
+	var res int
+	fmt.Scanln(&res)
+	return res
+}
+
 func main() {
+	// Создаем единую зависимость для работы с базой данных
+	db := files.NewJsonDB("vault.json")
+
 Menu:
 	for {
 		if variant := menuSelector(); variant != 0 {
 			switch variant {
 			case 1:
-				createAccount()
+				createAccount(db)
 			case 2:
-				searchAccount()
+				searchAccount(db)
 			case 3:
-				deleteAccount()
+				deleteAccount(db)
 			default:
 				break Menu
 			}
@@ -24,10 +54,11 @@ Menu:
 	}
 }
 
-func createAccount() {
-	login := promtData([]string{"Login: "})
-	password := promtData([]string{"Password: "})
-	url := promtData([]string{"URL: "})
+func createAccount(db account.Db) {
+	inputProvider := NewConsoleInputProvider()
+	login := inputProvider.PromptData("Login: ")
+	password := inputProvider.PromptData("Password: ")
+	url := inputProvider.PromptData("URL: ")
 
 	myAccount, err := account.NewAccount(login, password, url)
 
@@ -36,39 +67,23 @@ func createAccount() {
 		return
 	}
 
-	vault := account.NewVault(files.NewJsonDB("vault.json"))
+	vault := account.NewVault(db)
 	vault.AddAccount(myAccount)
-	data, err := vault.ToBytes()
-
-	if err != nil {
-		fmt.Println("Error marshalling account", err)
-		return
-	}
-
-	files.NewJsonDB("vault.json").Write(data, "vault.json")
-}
-
-func promtData[T any](promt []T) string {
-	fmt.Print(promt)
-	var res string
-	fmt.Scanln(&res)
-	return res
 }
 
 func menuSelector() int {
-	var variant int
+	inputProvider := NewConsoleInputProvider()
 	fmt.Println("Choose variant: ")
 	fmt.Println("1. Create account")
 	fmt.Println("2. Search account")
 	fmt.Println("3. Delete account")
 	fmt.Println("4. Exit")
 
-	fmt.Scanln(&variant)
-	return variant
+	return inputProvider.PromptInt("")
 }
 
-func searchAccount() {
-	foundAccount, err := account.FindAccount()
+func searchAccount(db account.Db) {
+	foundAccount, err := account.FindAccount(db)
 
 	if err != nil {
 		fmt.Println("Ошибка:", err)
@@ -79,8 +94,8 @@ func searchAccount() {
 	foundAccount.OutputPassword()
 }
 
-func deleteAccount() {
-	err := account.DeleteAccount()
+func deleteAccount(db account.Db) {
+	err := account.DeleteAccount(db)
 
 	if err != nil {
 		fmt.Println("Ошибка при удалении аккаунта:", err)
