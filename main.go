@@ -25,9 +25,9 @@ Menu:
 }
 
 func createAccount() {
-	login := promtData("Login: ")
-	password := promtData("Password: ")
-	url := promtData("URL: ")
+	login := promtData([]string{"Login: "})
+	password := promtData([]string{"Password: "})
+	url := promtData([]string{"URL: "})
 
 	myAccount, err := account.NewAccount(login, password, url)
 
@@ -36,7 +36,7 @@ func createAccount() {
 		return
 	}
 
-	vault := account.NewVault()
+	vault := account.NewVault(files.NewJsonDB("vault.json"))
 	vault.AddAccount(myAccount)
 	data, err := vault.ToBytes()
 
@@ -45,10 +45,10 @@ func createAccount() {
 		return
 	}
 
-	files.WriteFile(string(data), "vault.json")
+	files.NewJsonDB("vault.json").Write(data, "vault.json")
 }
 
-func promtData(promt string) string {
+func promtData[T any](promt []T) string {
 	fmt.Print(promt)
 	var res string
 	fmt.Scanln(&res)

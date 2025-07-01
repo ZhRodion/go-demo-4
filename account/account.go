@@ -107,7 +107,7 @@ func FindAccount() (*Account, error) {
 		return nil, errors.New("login is required")
 	}
 
-	file, err := files.ReadFile("vault.json")
+	file, err := files.NewJsonDB("vault.json").Read("vault.json")
 
 	if err != nil {
 		color.Red("Error reading file", err.Error())
@@ -141,7 +141,7 @@ func DeleteAccount() error {
 	}
 
 	// Читаем текущий vault
-	file, err := files.ReadFile("vault.json")
+	file, err := files.NewJsonDB("vault.json").Read("vault.json")
 	if err != nil {
 		color.Red("Error reading file", err.Error())
 		return err
@@ -176,6 +176,6 @@ func DeleteAccount() error {
 		return err
 	}
 
-	files.WriteFile(string(data), "vault.json")
+	files.NewJsonDB("vault.json").Write(data, "vault.json")
 	return nil
 }

@@ -1,13 +1,22 @@
 package files
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 )
 
-func ReadFile(name string) ([]byte, error) {
-	data, err := os.ReadFile(name)
+type JsonDb struct {
+	filename string
+}
+
+func NewJsonDB(name string) *JsonDb {
+	return &JsonDb{
+		filename: name,
+	}
+}
+
+func (db *JsonDb) Read(name string) ([]byte, error) {
+	data, err := os.ReadFile(db.filename)
 
 	if err != nil {
 		fmt.Println("Error opening file", err)
@@ -17,18 +26,8 @@ func ReadFile(name string) ([]byte, error) {
 	return data, nil
 }
 
-func IsValidJSON(filename string) bool {
-	data, err := ReadFile(filename)
-	if err != nil {
-		return false
-	}
-
-	var js interface{}
-	return json.Unmarshal(data, &js) == nil
-}
-
-func WriteFile(content, name string) {
-	file, err := os.Create(name)
+func (db *JsonDb) Write(content []byte, name string) {
+	file, err := os.Create(db.filename)
 
 	if err != nil {
 		fmt.Println("Error creating file", err)
@@ -36,7 +35,7 @@ func WriteFile(content, name string) {
 	}
 
 	defer file.Close()
-	_, err = file.WriteString(content)
+	_, err = file.Write(content)
 
 	if err != nil {
 		file.Close()

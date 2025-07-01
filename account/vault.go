@@ -9,22 +9,35 @@ import (
 	"github.com/fatih/color"
 )
 
+type Db interface {
+	Read(string) ([]byte, error)
+	Write([]byte, string)
+}
+
 type Vault struct {
 	Accounts  []Account `json:"accounts"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func NewVault() *Vault {
-	file, err := files.ReadFile("vault.json")
+type VaultWithDb struct {
+	Vault
+	db Db
+}
+
+func NewVault(db Db) *VaultWithDb {
+	file, err := db.Read("vault.json")
 
 	if err != nil {
-		return &Vault{
-			Accounts:  []Account{},
-			UpdatedAt: time.Now(),
+		return &VaultWithDb{
+			Vault: Vault{
+				Accounts:  []Account{},
+				UpdatedAt: time.Now(),
+			},
+			db: db,
 		}
 	}
 
-	var vault Vault
+	var vault VaultWithDb
 	err = json.Unmarshal(file, &vault)
 
 	if err != nil {
@@ -41,7 +54,7 @@ func (vault *Vault) AddAccount(account *Account) {
 	if err != nil {
 		color.Red("Error writing file", err.Error())
 	}
-	files.WriteFile(string(data), "vault.json")
+	files.NewJsonDB("vault.json").Write(data, "vault.json")
 }
 
 func (vault *Vault) ToBytes() ([]byte, error) {
@@ -74,13 +87,13 @@ func SaveBin(data []byte, filename string) error {
 	}
 
 	// Сохраняем в файл
-	files.WriteFile(string(jsonData), filename)
+	files.NewJsonDB(filename).Write(jsonData, filename)
 	return nil
 }
 
 // LoadBin загружает бинарные данные из JSON файла
 func LoadBin(filename string) ([]byte, error) {
-	file, err := files.ReadFile(filename)
+	file, err := files.NewJsonDB(filename).Read(filename)
 	if err != nil {
 		return nil, err
 	}
